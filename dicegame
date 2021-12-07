@@ -1,0 +1,268 @@
+/*
+* Just a simple crap game
+*
+*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <time.h>
+
+int roll(void);
+int passLine(int rollResult);
+int dontPassLine(int rollResult);
+int printMenu(void);
+int pointPassLine(int points,int roll);
+int pointdontPass(int points,int roll);
+int secondRoll(int points,int menu);
+
+int main(void){
+    //initiate a bankroll of $200 for player
+    int bankroll=200;
+    char isRide;
+    char isQuit;
+    int bet = 0;
+    int menu,firstResult,secondResult,isWin;
+    printf("*****************************************\n\n");
+    printf("WELCOME TO THE CRAPS GAME \n\n");
+    printf("*****************************************\n\n");
+
+    // use time as random seed
+    srand(time(NULL));
+    
+    // use loop to keep the program running until user wants to quit
+    while(bankroll>0)
+    {
+        if(bet==0){
+            printf("\nMake a bet between $5 and $%d\n",bankroll);
+            scanf("%d",&bet);
+            printf("\nYou made a bet for $%d \n",bet);
+            
+            //bets must be between $5 and the max amount of bankroll.
+            //if player enters a bet smaller than $5, let them play with a $5 bet
+            //if player enters a bet greater than what they have, let them play with the max amount of money they have
+            if(bet<5){
+                printf("\nYou have entered a bet smaller than $5. Let's play with the minimum bet ($5)");
+                bet=5;
+            }
+            else if(bet>bankroll){
+                printf("You have entered a bet greater than your bankroll $%d. Let's play with the maximum bet you can make.\n",bankroll);
+                bet=bankroll;
+            }
+        }
+        //show options
+        menu=printMenu();
+        if(menu==1){
+            printf("\nYou choose 'Pass Line'");
+        }
+        else if(menu==2){
+            printf("\nYou choose 'Don't Pass Line'");
+        }
+        else{
+            exit(0);
+        }
+        fflush(stdin);
+        
+        //this is the first roll after player places a bet
+        firstResult=roll();
+        
+        //get the result from the roll, then use it to check if the player win the bet
+        //the result of isWin is either 0, 1, or the roll result , 0 means lose and 1 means win while roll result means we need 2nd roll
+        //use this isWin result for the next step
+        if(menu==1){
+            isWin=passLine(firstResult);
+        }
+        else{
+            isWin=dontPassLine(firstResult);
+        }
+        
+        //take isWin and return the result of the bet
+        switch(isWin){
+            //in case isWin is 0, the player loses and bankroll is deducted the amount of the bet
+            case 0:
+                bankroll-=bet;
+                printf("\nYou lost $%d",bet);
+                printf("\nYou have $%d",bankroll);
+                bet=0;
+                if(bankroll==0){
+                    printf("\n\nGAME OVER !");
+                    exit(0);
+                }
+                printf("\nDo you want to quit? (Enter 'Y/y' for 'Yes' or 'N/n' for 'No'\n");
+                scanf(" %c",&isQuit);
+                if(isQuit=='Y'||isQuit=='y'){
+                    exit(0);
+                }
+                break;
+            //in case isWin is 1, the player wins and bankroll is added the amount of the bet
+            case 1:
+                bankroll+=bet;
+                printf("\nCongratulation you won $%d",bet);
+                printf("\nYou have $%d",bankroll);
+                printf("\nDo you want to let it ride? (Enter 'Y/y' for 'Yes' or 'N/n' for 'No'\n");
+                scanf(" %c",&isRide);
+                if(isRide=='Y'||isRide=='y'){
+                    bet=bet*2;
+                }
+                else{
+                    bet=0;
+                }
+                break;
+            //here we need a 2nd roll. Ask if player wants to double their bet    
+            default:
+                printf("\nYour points: %d",isWin);
+                printf("\nDo you want to double your bet? (Enter 'Y/y' for 'Yes' or 'N/n' for 'No'\n");
+                scanf(" %c",&isRide);
+                if(isRide=='Y'||isRide=='y'){
+                    if(bankroll>=bet*2){
+                        bet=bet*2;
+                    }
+                    else{
+                        printf("\n\nI was asking for fun. You don't have enough money to double your bet. HAHAHA!!!\n\n");
+                    }
+                }
+                //keep rolling until we have the result
+                while((getchar()) != '\n');
+                secondResult=secondRoll(isWin,menu);
+                if(secondResult==1){
+                    bankroll=bankroll+bet;
+                    printf("\nCongratulation you won $%d",bet);
+                    printf("\nYou have $%d",bankroll);
+                    printf("\nDo you want to let it ride? (Enter 'Y/y' for 'Yes' or 'N/n' for 'No'\n");
+                    scanf(" %c",&isRide);
+                    if(isRide=='Y'||isRide=='y'){
+                        bet=bet*2;
+                    }
+                    else{
+                        bet=0;
+                    }
+                }
+                else{
+                    printf("\nYou lost $%d",bet);
+                    bankroll=bankroll - bet;
+                    printf("\nYou have $%d",bankroll);
+                    
+                    //if player loses and they have nothing left in bankroll, game ends.
+                    if(bankroll==0){
+                    printf("\n\nGAME OVER !");
+                    exit(0);
+                    }
+                    printf("\nDo you want to quit? (Enter 'Y/y' for 'Yes' or 'N/n' for 'No'\n");
+                    scanf(" %c",&isQuit);
+                    if(isQuit=='Y'||isQuit=='y'){
+                    exit(0);
+                    }
+                    bet=0;
+                }
+                
+                break;
+        }
+    }
+    printf("\n\nGAME OVER !!!!!!!");    
+
+}
+
+int roll(void){
+    
+    printf("\nPress Enter to roll.");
+    while((getchar()) != '\n');
+    getchar();
+    int die1=(random()%6)+1;
+    int die2=(random()%6)+1;
+    printf("\nRolling .  .   .   .   . ");
+    printf("\nDice 1 - %d",die1);
+    printf("\nDice 2 - %d",die2);
+    int result=die1+die2;
+    printf("\nRoll Total = %d",result);
+    return result;
+}
+
+int passLine(int rollResult){
+    int returnValue;
+    if(rollResult==7||rollResult==11){
+        returnValue=1;
+    }else if(rollResult==2||rollResult==3||rollResult==12){
+        returnValue=0;
+    }
+    else
+        returnValue=rollResult;
+
+    return returnValue;    
+}   
+
+int dontPassLine(int rollResult){
+    int returnValue;
+    if(rollResult==7||rollResult==11){
+        returnValue=0;
+    }else if(rollResult==2||rollResult==3||rollResult==12){
+        returnValue=1;
+    }
+    else
+        returnValue=rollResult;
+
+    return returnValue;    
+}
+
+int printMenu(void){
+    int input;
+    printf("Enter your choice: \n");
+    printf("1 - Pass Line\n");
+    printf("2 - Do not Pass Line\n");
+    printf("3 - Quit\n");
+    scanf(" %d",&input);
+    fflush(stdin);
+    return input;
+}
+
+int pointPassLine(int points,int roll){
+    int returnValue;
+    if(points==roll){
+        returnValue=1;
+    }
+    else if(roll==7){
+        returnValue=0;
+    }
+    return returnValue;
+}
+
+int pointdontPass(int points,int roll){
+    int returnValue;
+    if(points==roll){
+        returnValue=0;
+    }
+    else if(roll==7){
+        returnValue=1;
+    }
+    return returnValue;
+}
+
+int secondRoll(int points,int menu){
+    srand(time(NULL));
+    int die1,die2,result;
+    do{
+        printf("\nPress Enter to roll.");
+        
+        getchar();
+        die1=(random()%6)+1;
+        die2=(random()%6)+1;
+        printf("\nRolling .  .   .   .   . ");
+        printf("\nDice 1 - %d",die1);
+        printf("\nDice 2 - %d",die2);
+        result=die1+die2;
+        printf("\nRoll Total = %d",result);
+    }while(result!=points&&result!=7);
+    if(menu==1&&result==points){
+        result=1;
+    }
+    else if(menu==2&&result==7){
+        result=1;
+    }
+    else{
+        result=0;
+    }
+    return result;
+}
+
+
+
+
+
